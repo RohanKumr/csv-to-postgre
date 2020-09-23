@@ -1,6 +1,6 @@
 # csv-to-postgre
 
-csv file should be in root folder
+5m Sales Records.csv file should be in the root folder
 
 
 npm install
