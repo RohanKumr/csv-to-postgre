@@ -7,9 +7,9 @@ npm install
 
 
 PostMan API
-http://localhost:5000/upload-csv
+http://localhost:5000/upload
 
-Post Data 
+Post Data Body
 {
 "name":"ADMIN",
 	"password":"admin-password"
