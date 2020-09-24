@@ -1,14 +1,4 @@
-// let secretData = {
-//   username: "postgres",
-//   password: "admin",
-//   server: "localhost",
-//   database: "TestinDB",
-// };
-let dbConfig = {
-  username: "postgres",
-  password: "admin",
-  server: "localhost",
-  database: "csvtopost",
-};
-
-module.exports = secretData;
+const Sequelize = require("sequelize");
+module.exports = new Sequelize(
+  "postgres://postgres:admin@localhost:5432/xencov"
+);
