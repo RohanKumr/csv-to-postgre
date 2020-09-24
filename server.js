@@ -1,37 +1,27 @@
 const express = require("express");
-const app = express();
-const cors = require("cors");
-var fs = require("fs");
 var csv = require("fast-csv");
-const pool = require("./pgdb");
 const { check, validationResult } = require("express-validator");
+// const User = require("./models/Users");
+const Records = require("./RecordsModel");
+//Database
+const db = require("./dbconfig");
 
-app.use(cors());
-app.use(express.json()); //req.boddy
+const port = 5000;
 
-app.use(
-  "/validate",
-  [
-    check("name", "Name is required").not().isEmpty(),
-    check("password", "Password is required").not().isEmpty(),
-  ],
-  async (req, res) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
-    }
-    try {
-      if (true) {
-        return res.status(400).json(req.body);
-      }
-    } catch (err) {
-      res.status(500).send("Server");
-    }
-  }
-);
+//Db connection
+db.authenticate()
+  .then(() => {
+    console.log("Connection has been established successfully.");
+  })
+  .catch((err) => {
+    console.error("Unable to connect to the database:", err);
+  });
 
+const app = express();
+app.use(express.json());
+app.get("/", (req, res) => res.json({ message: "Hello World" }));
 app.post(
-  "/upload-csv",
+  "/upload",
   [
     check("name", "Name is required").not().isEmpty(),
     check("password", "Password is required").not().isEmpty(),
@@ -42,80 +32,46 @@ app.post(
       return res.status(400).json({ errors: errors.array() });
     }
     try {
-      pool.connect(function (err) {
-        if (err) {
-          console.log(err);
-        }
-      });
-      res
-        .status(201)
-        .json("Please Wait! Data is being uploaded to the Database ");
       let csvStream = csv
-        //   .parseFile("./FL_insurance_sample.csv", { headers: true })
         .parseFile("./5m Sales Records.csv", { headers: true })
-        .on("data", function (record) {
-          // csvStream.pause();
-          let Region = record.Region;
-          let Country = record.Country;
-          let Item_Type = record["Item Type"];
-          let Sales_Channel = record["Sales Channel"];
-          let Order_Priority = record["Order Priority"];
-          let Order_Date = record["Order Date"];
-          let Order_ID = record["Order ID"];
-          let Ship_Date = record["Ship Date"];
-          let Units_Sold = record["Units Sold"];
-          let Unit_Price = record["Unit Price"];
-          let Unit_Cost = record["Unit Cost"];
-          let Total_Revenue = record["Total Revenue"];
-          let Total_Cost = record["Total Cost"];
-          let Total_Profit = record["Total Profit"];
+        .on("data", async function (record) {
+          try {
+            //     const newUser = new User(req.body);
+            const newRecord = new Records({
+              Region: record.Region,
+              Country: record.Country,
+              Item_Type: record["Item Type"],
+              Sales_Channel: record["Sales Channel"],
+              Order_Priority: record["Order Priority"],
+              Order_Date: record["Order Date"],
+              Order_ID: record["Order ID"],
+              Ship_Date: record["Ship Date"],
+              Units_Sold: record["Units Sold"],
+              Unit_Price: record["Unit Price"],
+              Unit_Cost: record["Unit Cost"],
+              Total_Revenue: record["Total Revenue"],
+              Total_Cost: record["Total Cost"],
+              Total_Profit: record["Total Profit"],
+            });
+            await newRecord.save();
 
-          pool.query(
-            // "INSERT INTO FL_insurance_sample(policyID, statecode, country) \
-            //     VALUES($1, $2, $3)",
-            // [policyID, statecode, county],
-            "INSERT INTO fivemilentries(Region, Country, Item_Type, Sales_Channel,Order_Priority,Order_Date,Order_ID,Ship_Date,Units_Sold,Unit_Price,Unit_Cost,Total_Revenue,Total_Cost,Total_Profit) \
-            VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)",
-            [
-              Region,
-              Country,
-              Item_Type,
-              Sales_Channel,
-              Order_Priority,
-              Order_Date,
-              Order_ID,
-              Ship_Date,
-              Units_Sold,
-              Unit_Price,
-              Unit_Cost,
-              Total_Revenue,
-              Total_Cost,
-              Total_Profit,
-            ],
-            function (err) {
-              if (err) {
-                console.log(err);
-              }
-            }
-          );
-          //   ++counter;
-          // }
-
+            res.status(200).json("The data is being uploaded. Please wait!");
+          } catch (error) {}
           csvStream.resume();
         })
         .on("end", function () {
           console.log("Job is done!");
-          res.status(201).json("All Data had been uploaded to the Database!");
+          res
+            .status(201)
+            .json("All the data has been uploaded to the Database!");
         })
-        .on("error", function (err) {
+        .on("error", function (error) {
           res.status(400).json({ error: error.message });
         });
-    } catch (err) {
-      console.log(err.meessage);
+    } catch (error) {
+      console.error(error);
     }
   }
 );
 
-app.listen(5000, () => {
-  console.log("Server running on post 5000");
-});
+app.listen(port, () => console.log(`App listening on port ${port}!`));
